@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import {
   LayoutDashboard, BarChart3, FileText, Package, Users, Settings, ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import logo from '@/assets/zoneticlab_logo.png';
 import { cn } from '@/lib/utils';
 
@@ -40,31 +41,51 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, en, cz, exact }) => {
           const isActive = exact ? location.pathname === to : location.pathname.startsWith(to);
-          return (
+
+          const linkContent = (
             <NavLink
               key={to}
               to={to}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-primary/10 text-primary sidebar-active-indicator'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                collapsed && 'justify-center px-2'
               )}
             >
               <Icon className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
               {!collapsed && <span>{t(en, cz)}</span>}
             </NavLink>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={to} delayDuration={0}>
+                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">
+                  {t(en, cz)}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return linkContent;
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-border p-2">
+      {/* Version + Collapse toggle */}
+      <div className="border-t border-border p-2 space-y-1">
+        {!collapsed && (
+          <div className="px-3 py-1.5 text-[10px] text-muted-foreground/60 font-mono">
+            v2.4.0 — Demo
+          </div>
+        )}
         <button
           onClick={onToggle}
           className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span>Collapse</span></>}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span>{t('Collapse', 'Skrýt')}</span></>}
         </button>
       </div>
     </aside>

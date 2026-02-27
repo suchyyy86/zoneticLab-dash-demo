@@ -8,12 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { CreditCard, Shield, User, Building2, Monitor, Lock } from 'lucide-react';
+import { CreditCard, Shield, User, Building2, Monitor, Lock, Palette, Bell, Sun, Moon, Laptop } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
 const tabs = [
   { id: 'profile', en: 'Profile', cz: 'Profil', icon: User },
   { id: 'company', en: 'Company', cz: 'Společnost', icon: Building2 },
+  { id: 'appearance', en: 'Appearance', cz: 'Vzhled', icon: Palette },
+  { id: 'notifications', en: 'Notifications', cz: 'Oznámení', icon: Bell },
   { id: 'security', en: 'Security', cz: 'Zabezpečení', icon: Shield },
   { id: 'billing', en: 'Billing', cz: 'Platby', icon: CreditCard },
 ];
@@ -33,9 +36,11 @@ const sessions = [
 
 export default function SettingsPage() {
   const { t, formatCurrency } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [twoFA, setTwoFA] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
+  const [notifications, setNotifications] = useState({ email: true, push: true, slack: false, sms: false });
 
   const handleSave = () => {
     toast({ title: t('Changes saved!', 'Změny uloženy!'), description: t('Your profile has been updated.', 'Váš profil byl aktualizován.') });
@@ -204,6 +209,146 @@ export default function SettingsPage() {
                     )}
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Appearance Tab */}
+        {activeTab === 'appearance' && (
+          <div className="space-y-4">
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{t('Appearance', 'Vzhled')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <Label className="text-sm font-medium">{t('Theme', 'Motiv')}</Label>
+                  <p className="text-xs text-muted-foreground mb-3">{t('Choose your preferred color scheme', 'Vyberte preferované barevné schéma')}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: 'light', label: t('Light', 'Světlý'), icon: Sun, preview: 'bg-white border-gray-200' },
+                      { id: 'dark', label: t('Dark', 'Tmavý'), icon: Moon, preview: 'bg-gray-900 border-gray-700' },
+                      { id: 'system', label: t('System', 'Systém'), icon: Laptop, preview: 'bg-gradient-to-r from-white to-gray-900 border-gray-300' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={toggleTheme}
+                        className={cn(
+                          'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                          theme === opt.id ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/30'
+                        )}
+                      >
+                        <div className={`h-10 w-full rounded-md border ${opt.preview}`} />
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          <opt.icon className="h-3 w-3" />
+                          {opt.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  <Label className="text-sm font-medium">{t('Accent Color', 'Barva akcentu')}</Label>
+                  <p className="text-xs text-muted-foreground mb-3">{t('Customize the primary color of the interface', 'Upravte hlavní barvu rozhraní')}</p>
+                  <div className="flex gap-2">
+                    {[
+                      { color: '#004AAC', name: 'Blue' },
+                      { color: '#7c3aed', name: 'Purple' },
+                      { color: '#059669', name: 'Green' },
+                      { color: '#dc2626', name: 'Red' },
+                      { color: '#ea580c', name: 'Orange' },
+                      { color: '#0891b2', name: 'Teal' },
+                    ].map((c) => (
+                      <button
+                        key={c.name}
+                        className={cn(
+                          'h-8 w-8 rounded-full border-2 transition-transform hover:scale-110',
+                          c.color === '#004AAC' ? 'border-foreground ring-2 ring-offset-2 ring-primary' : 'border-transparent'
+                        )}
+                        style={{ backgroundColor: c.color }}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  <Label className="text-sm font-medium">{t('Font Size', 'Velikost písma')}</Label>
+                  <p className="text-xs text-muted-foreground mb-3">{t('Adjust the interface font size', 'Upravte velikost písma rozhraní')}</p>
+                  <div className="flex items-center gap-3">
+                    {['S', 'M', 'L'].map((size) => (
+                      <button
+                        key={size}
+                        className={cn(
+                          'h-9 w-12 rounded-md border text-xs font-bold transition-colors',
+                          size === 'M' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'
+                        )}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-4">
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{t('Notification Preferences', 'Předvolby oznámení')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                {[
+                  { key: 'email' as const, label: t('Email Notifications', 'E-mailová oznámení'), desc: t('Receive updates and reports via email', 'Dostávejte aktualizace a reporty e-mailem') },
+                  { key: 'push' as const, label: t('Push Notifications', 'Push oznámení'), desc: t('Get real-time alerts in your browser', 'Dostávejte upozornění v reálném čase v prohlížeči') },
+                  { key: 'slack' as const, label: t('Slack Integration', 'Integrace Slack'), desc: t('Forward notifications to your Slack workspace', 'Přeposílejte oznámení do vašeho Slack workspace') },
+                  { key: 'sms' as const, label: t('SMS Alerts', 'SMS upozornění'), desc: t('Receive critical alerts via SMS', 'Dostávejte kritická upozornění přes SMS') },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                    </div>
+                    <Switch
+                      checked={notifications[item.key]}
+                      onCheckedChange={(v) => {
+                        setNotifications(prev => ({ ...prev, [item.key]: v }));
+                        toast({ title: v ? t('Enabled', 'Povoleno') : t('Disabled', 'Zakázáno'), description: item.label });
+                      }}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">{t('Notification Schedule', 'Plán oznámení')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{t('Quiet Hours', 'Klidové hodiny')}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('Pause notifications during set hours', 'Pozastavit oznámení v nastavených hodinách')}</p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('From', 'Od')}</Label>
+                    <Input type="time" defaultValue="22:00" className="h-9" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('To', 'Do')}</Label>
+                    <Input type="time" defaultValue="07:00" className="h-9" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

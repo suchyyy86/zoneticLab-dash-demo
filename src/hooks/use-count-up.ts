@@ -2,25 +2,30 @@ import { useState, useEffect, useRef } from 'react';
 
 export function useCountUp(end: number, duration = 1200, startOnMount = true) {
     const [value, setValue] = useState(0);
-    const startedRef = useRef(false);
+    const prevEndRef = useRef(0);
 
     useEffect(() => {
-        if (!startOnMount || startedRef.current) return;
-        startedRef.current = true;
+        if (!startOnMount) return;
+
+        const from = prevEndRef.current;
+        prevEndRef.current = end;
 
         const startTime = performance.now();
+        let raf: number;
         const step = (currentTime: number) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             // Ease out cubic
             const eased = 1 - Math.pow(1 - progress, 3);
-            setValue(Math.round(end * eased));
+            setValue(Math.round(from + (end - from) * eased));
 
             if (progress < 1) {
-                requestAnimationFrame(step);
+                raf = requestAnimationFrame(step);
             }
         };
-        requestAnimationFrame(step);
+        raf = requestAnimationFrame(step);
+
+        return () => cancelAnimationFrame(raf);
     }, [end, duration, startOnMount]);
 
     return value;

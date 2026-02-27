@@ -1,9 +1,13 @@
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { useCountUp } from '@/hooks/use-count-up';
 import {
@@ -11,7 +15,8 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users, Target,
-  Sparkles, ArrowUpRight, Clock, FileText, UserPlus, CreditCard
+  Sparkles, ArrowUpRight, Clock, FileText, UserPlus, CreditCard,
+  Plus, Trash2, CheckCircle2, CalendarDays
 } from 'lucide-react';
 
 const sparklineData = [
@@ -21,26 +26,49 @@ const sparklineData = [
   [45, 52, 48, 56, 50, 60, 55, 62, 58, 67, 63, 71],
 ];
 
-const revenueData = [
-  { month: 'Jan', revenue: 42000, expenses: 28000 },
-  { month: 'Feb', revenue: 48000, expenses: 31000 },
-  { month: 'Mar', revenue: 45000, expenses: 29000 },
-  { month: 'Apr', revenue: 55000, expenses: 33000 },
-  { month: 'May', revenue: 52000, expenses: 30000 },
-  { month: 'Jun', revenue: 61000, expenses: 36000 },
-  { month: 'Jul', revenue: 58000, expenses: 34000 },
-  { month: 'Aug', revenue: 67000, expenses: 38000 },
-  { month: 'Sep', revenue: 63000, expenses: 37000 },
-  { month: 'Oct', revenue: 72000, expenses: 41000 },
-  { month: 'Nov', revenue: 69000, expenses: 40000 },
-  { month: 'Dec', revenue: 84000, expenses: 45000 },
+const revenueDataMonthly = [
+  { label: 'Jan', revenue: 42000, expenses: 28000 },
+  { label: 'Feb', revenue: 48000, expenses: 31000 },
+  { label: 'Mar', revenue: 45000, expenses: 29000 },
+  { label: 'Apr', revenue: 55000, expenses: 33000 },
+  { label: 'May', revenue: 52000, expenses: 30000 },
+  { label: 'Jun', revenue: 61000, expenses: 36000 },
+  { label: 'Jul', revenue: 58000, expenses: 34000 },
+  { label: 'Aug', revenue: 67000, expenses: 38000 },
+  { label: 'Sep', revenue: 63000, expenses: 37000 },
+  { label: 'Oct', revenue: 72000, expenses: 41000 },
+  { label: 'Nov', revenue: 69000, expenses: 40000 },
+  { label: 'Dec', revenue: 84000, expenses: 45000 },
+];
+
+const revenueDataDaily = [
+  { label: 'Mon', revenue: 3200, expenses: 1800 },
+  { label: 'Tue', revenue: 2800, expenses: 1600 },
+  { label: 'Wed', revenue: 3500, expenses: 2100 },
+  { label: 'Thu', revenue: 4100, expenses: 2400 },
+  { label: 'Fri', revenue: 3800, expenses: 2200 },
+  { label: 'Sat', revenue: 2100, expenses: 1200 },
+  { label: 'Sun', revenue: 1800, expenses: 900 },
+];
+
+const revenueData30d = [
+  { label: 'W1', revenue: 18200, expenses: 10500 },
+  { label: 'W2', revenue: 21400, expenses: 12800 },
+  { label: 'W3', revenue: 19800, expenses: 11200 },
+  { label: 'W4', revenue: 24600, expenses: 14500 },
+];
+
+const revenueData90d = [
+  { label: 'Oct', revenue: 72000, expenses: 41000 },
+  { label: 'Nov', revenue: 69000, expenses: 40000 },
+  { label: 'Dec', revenue: 84000, expenses: 45000 },
 ];
 
 const categoryData = [
-  { name: 'Web Design', value: 38, color: '#004AAC' },
-  { name: 'SEO', value: 22, color: '#3b82f6' },
-  { name: 'Ads', value: 27, color: '#93c5fd' },
-  { name: 'Consulting', value: 13, color: '#dbeafe' },
+  { name: 'Hardware', value: 42, color: '#004AAC' },
+  { name: 'Toner & Ink', value: 25, color: '#3b82f6' },
+  { name: 'Peripherals', value: 21, color: '#93c5fd' },
+  { name: 'Networking', value: 12, color: '#dbeafe' },
 ];
 
 const recentOrders = [
@@ -51,11 +79,11 @@ const recentOrders = [
   { id: '#INV-2024-108', client: 'Pilsner Urquell', amount: 9100, status: 'Paid' },
 ];
 
-const tasks = [
-  { id: 1, label: 'Review Invoice #112', labelCz: 'Zkontrolovat fakturu #112', done: false },
-  { id: 2, label: 'Restock HP Toner', labelCz: 'Doplnit HP toner', done: false },
-  { id: 3, label: 'Call Novák at Tatra', labelCz: 'Zavolat Novákovi z Tatry', done: true },
-  { id: 4, label: 'Send proposal to CEZ', labelCz: 'Poslat návrh ČEZ', done: false },
+const initialTasks = [
+  { id: 1, label: 'Review Invoice #112', labelCz: 'Zkontrolovat fakturu #112', done: false, priority: 'high' as const, due: 'Today', dueCz: 'Dnes', link: '/invoices' },
+  { id: 2, label: 'Restock HP Toner', labelCz: 'Doplnit HP toner', done: false, priority: 'medium' as const, due: 'Tomorrow', dueCz: 'Zítra', link: '/inventory' },
+  { id: 3, label: 'Call Novák at Tatra', labelCz: 'Zavolat Novákovi z Tatry', done: true, priority: 'low' as const, due: 'Done', dueCz: 'Hotovo', link: '/customers' },
+  { id: 4, label: 'Send proposal to CEZ', labelCz: 'Poslat návrh ČEZ', done: false, priority: 'high' as const, due: 'Feb 28', dueCz: '28. úno', link: '/customers' },
 ];
 
 const activityFeed = [
@@ -96,6 +124,61 @@ export default function DashboardPage() {
   const monthlyGoal = 85000;
   const currentProgress = 72000;
   const goalPercentage = Math.round((currentProgress / monthlyGoal) * 100);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newTask, setNewTask] = useState('');
+  const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [newDue, setNewDue] = useState('');
+  const [revPeriod, setRevPeriod] = useState('YTD');
+
+  const filteredRevData = useMemo(() => {
+    switch (revPeriod) {
+      case '7d': return revenueDataDaily;
+      case '30d': return revenueData30d;
+      case '90d': return revenueData90d;
+      default: return revenueDataMonthly;
+    }
+  }, [revPeriod]);
+
+  const toggleTask = (id: number) => {
+    setTasks(prev => prev.map(tk => {
+      if (tk.id !== id) return tk;
+      const newDone = !tk.done;
+      if (newDone) {
+        toast({
+          title: t('✓ Task completed', '✓ Úkol dokončen'),
+          description: t(tk.label, tk.labelCz),
+        });
+      }
+      return { ...tk, done: newDone, due: newDone ? (t('Done', 'Hotovo')) : tk.due, dueCz: newDone ? 'Hotovo' : tk.dueCz };
+    }));
+  };
+
+  const addTask = () => {
+    if (!newTask.trim()) return;
+    const dueLabel = newDue.trim() || t('This week', 'Tento týden');
+    setTasks(prev => [...prev, {
+      id: Date.now(),
+      label: newTask,
+      labelCz: newTask,
+      done: false,
+      priority: newPriority,
+      due: dueLabel,
+      dueCz: dueLabel,
+      link: '/',
+    }]);
+    setNewTask('');
+    setNewPriority('medium');
+    setNewDue('');
+    setAddOpen(false);
+    toast({ title: t('Task added', 'Úkol přidán'), description: newTask });
+  };
+
+  const clearCompleted = () => {
+    const count = tasks.filter(tk => tk.done).length;
+    setTasks(prev => prev.filter(tk => !tk.done));
+    toast({ title: t(`${count} task(s) cleared`, `${count} úkol(ů) odstraněn(o)`) });
+  };
 
   return (
     <div className="space-y-6">
@@ -170,14 +253,15 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">{t('Revenue vs Expenses', 'Příjmy vs Náklady')}</CardTitle>
               <div className="flex items-center gap-1">
-                {['7d', '30d', '90d', 'YTD'].map((period) => (
+                {['7d', '30d', '90d', 'YTD'].map((p) => (
                   <Button
-                    key={period}
-                    variant={period === 'YTD' ? 'default' : 'ghost'}
+                    key={p}
+                    variant={revPeriod === p ? 'default' : 'ghost'}
                     size="sm"
-                    className={`h-7 px-2.5 text-xs ${period === 'YTD' ? 'bg-primary text-primary-foreground' : ''}`}
+                    className={`h-7 px-2.5 text-xs ${revPeriod === p ? 'bg-primary text-primary-foreground' : ''}`}
+                    onClick={() => setRevPeriod(p)}
                   >
-                    {period}
+                    {p}
                   </Button>
                 ))}
               </div>
@@ -185,7 +269,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="px-2 pb-4">
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={filteredRevData}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(216, 100%, 50%)" stopOpacity={0.2} />
@@ -197,7 +281,7 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
@@ -335,27 +419,135 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <Card className="border-border card-hover">
             <CardHeader className="pb-2 px-5 pt-5">
-              <CardTitle className="text-sm font-semibold">{t('Quick Actions', 'Rychlé akce')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 px-5 pb-4">
-              {tasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <Checkbox defaultChecked={task.done} className="border-border" />
-                    <span className={`text-sm ${task.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                      {t(task.label, task.labelCz)}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs shrink-0"
-                    onClick={() => toast({ title: t('Note added', 'Poznámka přidána'), description: `${t('Task', 'Úkol')}: ${t(task.label, task.labelCz)}` })}
-                  >
-                    {t('Note', 'Poznámka')}
-                  </Button>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">{t('Quick Actions', 'Rychlé akce')}</CardTitle>
+                <div className="flex items-center gap-1">
+                  {tasks.some(tk => tk.done) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
+                      onClick={clearCompleted}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      {t('Clear done', 'Smazat hotové')}
+                    </Button>
+                  )}
+                  <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>{t('Add Task', 'Přidat úkol')}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                          <Label>{t('Task description', 'Popis úkolu')}</Label>
+                          <Input
+                            placeholder={t('e.g. Follow up with client', 'např. Kontaktovat klienta')}
+                            value={newTask}
+                            onChange={(e) => setNewTask(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                            autoFocus
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>{t('Priority', 'Priorita')}</Label>
+                          <div className="flex gap-2">
+                            {(['high', 'medium', 'low'] as const).map((p) => {
+                              const styles = {
+                                high: newPriority === 'high' ? 'bg-red-500 text-white border-red-500' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+                                medium: newPriority === 'medium' ? 'bg-yellow-500 text-white border-yellow-500' : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800',
+                                low: newPriority === 'low' ? 'bg-green-500 text-white border-green-500' : 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
+                              };
+                              return (
+                                <button
+                                  key={p}
+                                  onClick={() => setNewPriority(p)}
+                                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${styles[p]}`}
+                                >
+                                  {t(
+                                    p === 'high' ? 'High' : p === 'medium' ? 'Medium' : 'Low',
+                                    p === 'high' ? 'Vysoká' : p === 'medium' ? 'Střední' : 'Nízká'
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-1.5">
+                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                            {t('Due date', 'Termín')}
+                          </Label>
+                          <Input
+                            type="date"
+                            value={newDue}
+                            onChange={(e) => setNewDue(e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                          <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>{t('Cancel', 'Zrušit')}</Button>
+                          <Button size="sm" className="bg-primary text-primary-foreground" onClick={addTask}>{t('Add', 'Přidat')}</Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {tasks.filter(tk => !tk.done).length} {t('remaining', 'zbývá')} · {tasks.filter(tk => tk.done).length} {t('completed', 'dokončeno')}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-1 px-5 pb-4">
+              {tasks.map((task) => {
+                const priorityStyles = {
+                  high: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+                  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+                  low: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+                };
+                return (
+                  <div
+                    key={task.id}
+                    className={`flex items-center justify-between gap-2 py-2 px-2 rounded-md transition-all duration-200 group ${task.done ? 'opacity-50' : 'hover:bg-muted/50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <Checkbox
+                        checked={task.done}
+                        onCheckedChange={() => toggleTask(task.id)}
+                        className="border-border"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-sm block truncate transition-all ${task.done ? 'line-through text-muted-foreground' : 'text-foreground'
+                          }`}>
+                          {t(task.label, task.labelCz)}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium border ${priorityStyles[task.priority]}`}>
+                            {t(
+                              task.priority === 'high' ? 'High' : task.priority === 'medium' ? 'Medium' : 'Low',
+                              task.priority === 'high' ? 'Vysoká' : task.priority === 'medium' ? 'Střední' : 'Nízká'
+                            )}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" />
+                            {t(task.due, task.dueCz)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {task.done && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>

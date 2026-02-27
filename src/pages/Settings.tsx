@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { CreditCard, Shield, User, Building2, Monitor, Lock, Palette, Bell, Sun, Moon, Laptop } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, ACCENT_COLORS } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -36,11 +37,25 @@ const sessions = [
 
 export default function SettingsPage() {
   const { t, formatCurrency } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('profile');
+  const { theme, setTheme, accentColor, setAccentColor, fontSize, setFontSize } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  const [activeTab, setActiveTab] = useState(tabParam && tabs.some(t => t.id === tabParam) ? tabParam : 'profile');
   const [twoFA, setTwoFA] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [notifications, setNotifications] = useState({ email: true, push: true, slack: false, sms: false });
+
+  useEffect(() => {
+    if (tabParam && tabs.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (id: string) => {
+    setActiveTab(id);
+    setSearchParams({ tab: id });
+  };
 
   const handleSave = () => {
     toast({ title: t('Changes saved!', 'Změny uloženy!'), description: t('Your profile has been updated.', 'Váš profil byl aktualizován.') });
@@ -53,7 +68,7 @@ export default function SettingsPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={cn(
               'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-left',
               activeTab === tab.id
@@ -233,7 +248,7 @@ export default function SettingsPage() {
                     ].map((opt) => (
                       <button
                         key={opt.id}
-                        onClick={toggleTheme}
+                        onClick={() => setTheme(opt.id as 'light' | 'dark' | 'system')}
                         className={cn(
                           'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all',
                           theme === opt.id ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/30'
@@ -253,21 +268,15 @@ export default function SettingsPage() {
                   <Label className="text-sm font-medium">{t('Accent Color', 'Barva akcentu')}</Label>
                   <p className="text-xs text-muted-foreground mb-3">{t('Customize the primary color of the interface', 'Upravte hlavní barvu rozhraní')}</p>
                   <div className="flex gap-2">
-                    {[
-                      { color: '#004AAC', name: 'Blue' },
-                      { color: '#7c3aed', name: 'Purple' },
-                      { color: '#059669', name: 'Green' },
-                      { color: '#dc2626', name: 'Red' },
-                      { color: '#ea580c', name: 'Orange' },
-                      { color: '#0891b2', name: 'Teal' },
-                    ].map((c) => (
+                    {ACCENT_COLORS.map((c) => (
                       <button
                         key={c.name}
+                        onClick={() => setAccentColor(c)}
                         className={cn(
                           'h-8 w-8 rounded-full border-2 transition-transform hover:scale-110',
-                          c.color === '#004AAC' ? 'border-foreground ring-2 ring-offset-2 ring-primary' : 'border-transparent'
+                          accentColor.name === c.name ? 'border-foreground ring-2 ring-offset-2 ring-primary' : 'border-transparent'
                         )}
-                        style={{ backgroundColor: c.color }}
+                        style={{ backgroundColor: c.hex }}
                         title={c.name}
                       />
                     ))}
@@ -278,12 +287,13 @@ export default function SettingsPage() {
                   <Label className="text-sm font-medium">{t('Font Size', 'Velikost písma')}</Label>
                   <p className="text-xs text-muted-foreground mb-3">{t('Adjust the interface font size', 'Upravte velikost písma rozhraní')}</p>
                   <div className="flex items-center gap-3">
-                    {['S', 'M', 'L'].map((size) => (
+                    {(['S', 'M', 'L'] as const).map((size) => (
                       <button
                         key={size}
+                        onClick={() => setFontSize(size)}
                         className={cn(
                           'h-9 w-12 rounded-md border text-xs font-bold transition-colors',
-                          size === 'M' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'
+                          fontSize === size ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'
                         )}
                       >
                         {size}

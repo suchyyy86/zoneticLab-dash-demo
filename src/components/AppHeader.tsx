@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -28,15 +29,27 @@ const notifications = [
 
 export function AppHeader() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const pageInfo = pageTitles[location.pathname] || { en: 'Dashboard', cz: 'Přehled' };
-  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const [notificationsList, setNotificationsList] = useState(notifications);
+  const unreadCount = notificationsList.filter(n => n.unread).length;
 
   const handleLogout = () => {
     toast({ title: t('Logged out successfully', 'Odhlášení proběhlo úspěšně'), description: t('See you next time!', 'Nashledanou!') });
     setTimeout(() => navigate('/login'), 1000);
+  };
+
+  const handlePopoverOpen = (open: boolean) => {
+    if (!open && unreadCount > 0) {
+      setNotificationsList(prev => prev.map(n => ({ ...n, unread: false })));
+    }
+  };
+
+  const handleThemeToggle = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -54,7 +67,7 @@ export function AppHeader() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleTheme}
+              onClick={handleThemeToggle}
               className="h-9 w-9 text-muted-foreground hover:text-foreground"
             >
               {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
@@ -79,7 +92,7 @@ export function AppHeader() {
         </Tooltip>
 
         {/* Notifications */}
-        <Popover>
+        <Popover onOpenChange={handlePopoverOpen}>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9 text-muted-foreground hover:text-foreground">
               <Bell className="h-4 w-4" />
@@ -96,7 +109,7 @@ export function AppHeader() {
               <span className="text-xs text-muted-foreground">{unreadCount} {t('unread', 'nepřečtených')}</span>
             </div>
             <div className="divide-y divide-border max-h-72 overflow-y-auto">
-              {notifications.map((n) => (
+              {notificationsList.map((n) => (
                 <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors ${n.unread ? 'bg-primary/5' : ''}`}>
                   <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${n.dot}`} />
                   <div className="flex-1 min-w-0">
@@ -107,7 +120,12 @@ export function AppHeader() {
               ))}
             </div>
             <div className="border-t border-border px-4 py-2">
-              <Button variant="ghost" size="sm" className="w-full text-xs text-primary hover:text-primary">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-primary hover:text-primary"
+                onClick={() => navigate('/notifications')}
+              >
                 {t('View all notifications', 'Zobrazit všechna oznámení')}
               </Button>
             </div>

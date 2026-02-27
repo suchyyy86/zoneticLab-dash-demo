@@ -34,9 +34,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       {/* Logo */}
       <div className={cn('flex items-center border-b border-border', collapsed ? 'justify-center p-3 h-16' : 'px-5 h-16 gap-3')}>
         <img src={logo} alt="ZoneticLab" className={cn('object-contain', collapsed ? 'h-8 w-8' : 'h-8')} />
-        {!collapsed && (
-          <span className="font-bold text-sm text-foreground tracking-tight">ZoneticLab</span>
-        )}
       </div>
 
       {/* Nav */}

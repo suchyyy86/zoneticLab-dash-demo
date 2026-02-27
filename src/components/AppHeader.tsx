@@ -67,10 +67,10 @@ export function AppHeader() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={toggleLanguage}
-              className="font-semibold text-xs h-8 px-3 border-border"
+              className="font-medium text-xs h-9 px-2.5 text-muted-foreground hover:text-foreground"
             >
               {language === 'EN' ? '🇨🇿 CZ' : '🇬🇧 EN'}
             </Button>

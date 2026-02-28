@@ -14,11 +14,20 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('EN');
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('zl-language') as Language) || 'CZ';
+    }
+    return 'CZ';
+  });
   const currency: Currency = language === 'EN' ? 'USD' : 'CZK';
 
   const toggleLanguage = () => {
-    setLanguage(prev => prev === 'EN' ? 'CZ' : 'EN');
+    setLanguage(prev => {
+      const next = prev === 'EN' ? 'CZ' : 'EN';
+      localStorage.setItem('zl-language', next);
+      return next;
+    });
   };
 
   const t = (en: string, cz: string) => language === 'EN' ? en : cz;

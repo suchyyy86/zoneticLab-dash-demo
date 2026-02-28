@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,12 +72,12 @@ const categoryData = [
   { name: 'Networking', value: 12, color: '#dbeafe' },
 ];
 
-const recentOrders = [
-  { id: '#INV-2024-112', client: 'Tatra s.r.o.', amount: 8400, status: 'Paid' },
-  { id: '#INV-2024-111', client: 'Škoda Auto a.s.', amount: 12500, status: 'Pending' },
-  { id: '#INV-2024-110', client: 'ČEZ Group', amount: 5200, status: 'Processing' },
-  { id: '#INV-2024-109', client: 'Kofola a.s.', amount: 3800, status: 'Paid' },
-  { id: '#INV-2024-108', client: 'Pilsner Urquell', amount: 9100, status: 'Paid' },
+const recentInvoices = [
+  { id: '#INV-2024-112', client: 'Tatra s.r.o.', amount: 18400, status: 'Overdue', statusCz: 'Po splatnosti' },
+  { id: '#INV-2024-111', client: 'Škoda Auto a.s.', amount: 71600, status: 'Pending', statusCz: 'Čekající' },
+  { id: '#INV-2024-110', client: 'ČEZ Group', amount: 29800, status: 'Paid', statusCz: 'Uhrazeno' },
+  { id: '#INV-2024-109', client: 'Kofola a.s.', amount: 8500, status: 'Paid', statusCz: 'Uhrazeno' },
+  { id: '#INV-2024-108', client: 'Pilsner Urquell', amount: 32400, status: 'Paid', statusCz: 'Uhrazeno' },
 ];
 
 const initialTasks = [
@@ -94,17 +95,17 @@ const activityFeed = [
 ];
 
 const kpiCards = [
-  { titleEn: 'Total Revenue', titleCz: 'Celkové příjmy', value: 716000, trend: 12.4, up: true, icon: DollarSign, sparkIdx: 0, prefix: '$' },
+  { titleEn: 'Total Revenue', titleCz: 'Celkové příjmy', value: 716000, trend: 12.4, up: true, icon: DollarSign, sparkIdx: 0, prefix: 'currency' },
   { titleEn: 'Active Orders', titleCz: 'Aktivní objednávky', value: 47, trend: -3.1, up: false, icon: ShoppingCart, sparkIdx: 1, prefix: '' },
   { titleEn: 'New Clients', titleCz: 'Noví klienti', value: 13, trend: 8.7, up: true, icon: Users, sparkIdx: 2, prefix: '' },
-  { titleEn: 'Avg Order Value', titleCz: 'Průměrná hodnota', value: 15234, trend: 4.2, up: true, icon: Target, sparkIdx: 3, prefix: '$' },
+  { titleEn: 'Avg Order Value', titleCz: 'Průměrná hodnota', value: 15234, trend: 4.2, up: true, icon: Target, sparkIdx: 3, prefix: 'currency' },
 ];
 
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     Paid: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
     Pending: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
-    Processing: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+    Overdue: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
   };
   return map[status] || 'bg-muted text-muted-foreground';
 };
@@ -113,7 +114,7 @@ function AnimatedKPIValue({ value, prefix }: { value: number; prefix: string }) 
   const { formatCurrency } = useLanguage();
   const animatedValue = useCountUp(value, 1500);
 
-  if (prefix === '$') {
+  if (prefix === 'currency') {
     return <>{formatCurrency(animatedValue)}</>;
   }
   return <>{animatedValue}</>;
@@ -121,6 +122,7 @@ function AnimatedKPIValue({ value, prefix }: { value: number; prefix: string }) 
 
 export default function DashboardPage() {
   const { t, formatCurrency } = useLanguage();
+  const navigate = useNavigate();
   const monthlyGoal = 85000;
   const currentProgress = 72000;
   const goalPercentage = Math.round((currentProgress / monthlyGoal) * 100);
@@ -282,10 +284,10 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k Kč`} />
                 <Tooltip
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                  formatter={(v: number) => [`$${(v / 1000).toFixed(1)}k`]}
+                  formatter={(v: number) => [`${(v / 1000).toFixed(1)}k Kč`]}
                 />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
                 <Area type="monotone" dataKey="revenue" name={t('Revenue', 'Příjmy')} stroke="hsl(var(--primary))" fill="url(#revGrad)" strokeWidth={2} />
@@ -349,12 +351,12 @@ export default function DashboardPage() {
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Recent Orders */}
+        {/* Recent Invoices */}
         <Card className="xl:col-span-2 border-border animate-fade-in-up stagger-8">
           <CardHeader className="pb-2 px-5 pt-5">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">{t('Recent Orders', 'Poslední objednávky')}</CardTitle>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-primary gap-1">
+              <CardTitle className="text-sm font-semibold">{t('Recent Invoices', 'Poslední faktury')}</CardTitle>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-primary gap-1" onClick={() => navigate('/invoices')}>
                 {t('View All', 'Zobrazit vše')}
                 <ArrowUpRight className="h-3 w-3" />
               </Button>
@@ -364,21 +366,21 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left px-5 py-2 text-xs font-medium text-muted-foreground">{t('Order ID', 'ID objednávky')}</th>
+                  <th className="text-left px-5 py-2 text-xs font-medium text-muted-foreground">{t('Invoice ID', 'ID faktury')}</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{t('Client', 'Klient')}</th>
                   <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">{t('Amount', 'Částka')}</th>
                   <th className="text-center px-5 py-2 text-xs font-medium text-muted-foreground">{t('Status', 'Stav')}</th>
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
+                {recentInvoices.map((order) => (
                   <tr key={order.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer">
                     <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{order.id}</td>
                     <td className="px-3 py-3 font-medium text-foreground">{order.client}</td>
                     <td className="px-3 py-3 text-right font-semibold">{formatCurrency(order.amount)}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadge(order.status)}`}>
-                        {order.status}
+                        {t(order.status, order.statusCz)}
                       </span>
                     </td>
                   </tr>
